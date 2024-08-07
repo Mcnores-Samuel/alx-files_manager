@@ -1,5 +1,4 @@
 import mongodb from 'mongodb';
-// eslint-disable-next-line no-unused-vars
 import Collection from 'mongodb/lib/collection';
 import { existsSync, readFileSync } from 'fs';
 
@@ -21,7 +20,6 @@ const envLoader = () => {
     }
   }
 };
-
 
 /**
  * Represents a MongoDB client.
