@@ -1,10 +1,10 @@
-import { promisify } from 'util';
-import { createClient } from 'redis';
 import mongodb from 'mongodb';
+// eslint-disable-next-line no-unused-vars
+import Collection from 'mongodb/lib/collection';
 import { existsSync, readFileSync } from 'fs';
 
 /**
- * Loads the appropriate environment variables based on the current lifecycle event.
+ * Loads the appropriate environment variables for an event.
  */
 const envLoader = () => {
   const env = process.env.npm_lifecycle_event || 'dev';
@@ -22,77 +22,16 @@ const envLoader = () => {
   }
 };
 
-/**
- * Class representing a Redis client.
- */
-class RedisClient {
-  /**
-   * Creates an instance of RedisClient and sets up event listeners.
-   */
-  constructor() {
-    this.client = createClient();
-    this.isClientConnected = true;
-
-    // Handle connection errors
-    this.client.on('error', (err) => {
-      console.error('Redis client failed to connect:', err.message || err.toString());
-      this.isClientConnected = false;
-    });
-
-    // Handle successful connection
-    this.client.on('connect', () => {
-      this.isClientConnected = true;
-    });
-  }
-
-  /**
-   * Checks if the Redis client is connected.
-   * @returns {boolean} - True if the client is connected, otherwise false.
-   */
-  isAlive() {
-    return this.isClientConnected;
-  }
-
-  /**
-   * Retrieves the value associated with the given key.
-   * @param {string} key - The key of the item to retrieve.
-   * @returns {Promise<string | null>} - The value of the key, or null if the key does not exist.
-   */
-  async get(key) {
-    return promisify(this.client.GET).bind(this.client)(key);
-  }
-
-  /**
-   * Stores a key-value pair in Redis with an expiration time.
-   * @param {string} key - The key of the item to store.
-   * @param {string | number | boolean} value - The value of the item to store.
-   * @param {number} duration - The expiration time in seconds.
-   * @returns {Promise<void>}
-   */
-  async set(key, value, duration) {
-    await promisify(this.client.SETEX).bind(this.client)(key, duration, value);
-  }
-
-  /**
-   * Deletes the value associated with the given key.
-   * @param {string} key - The key of the item to delete.
-   * @returns {Promise<void>}
-   */
-  async del(key) {
-    await promisify(this.client.DEL).bind(this.client)(key);
-  }
-}
 
 /**
- * Class representing a MongoDB client.
+ * Represents a MongoDB client.
  */
 class DBClient {
   /**
-   * Creates an instance of DBClient and initializes the connection to the MongoDB server.
+   * Creates a new DBClient instance.
    */
   constructor() {
     envLoader();
-
     const host = process.env.DB_HOST || 'localhost';
     const port = process.env.DB_PORT || 27017;
     const database = process.env.DB_DATABASE || 'files_manager';
@@ -103,46 +42,45 @@ class DBClient {
   }
 
   /**
-   * Checks if the MongoDB client is connected.
-   * @returns {boolean} - True if the client is connected, otherwise false.
+   * Checks if this client's connection to the MongoDB server is active.
+   * @returns {boolean}
    */
   isAlive() {
     return this.client.isConnected();
   }
 
   /**
-   * Retrieves the number of users in the 'users' collection.
-   * @returns {Promise<number>} - The number of users.
+   * Retrieves the number of users in the database.
+   * @returns {Promise<Number>}
    */
   async nbUsers() {
     return this.client.db().collection('users').countDocuments();
   }
 
   /**
-   * Retrieves the number of files in the 'files' collection.
-   * @returns {Promise<number>} - The number of files.
+   * Retrieves the number of files in the database.
+   * @returns {Promise<Number>}
    */
   async nbFiles() {
     return this.client.db().collection('files').countDocuments();
   }
 
   /**
-   * Retrieves a reference to the 'users' collection.
-   * @returns {Promise<Collection>} - The 'users' collection.
+   * Retrieves a reference to the `users` collection.
+   * @returns {Promise<Collection>}
    */
   async usersCollection() {
     return this.client.db().collection('users');
   }
 
   /**
-   * Retrieves a reference to the 'files' collection.
-   * @returns {Promise<Collection>} - The 'files' collection.
+   * Retrieves a reference to the `files` collection.
+   * @returns {Promise<Collection>}
    */
   async filesCollection() {
     return this.client.db().collection('files');
   }
 }
 
-export const redisClient = new RedisClient();
 export const dbClient = new DBClient();
-export default { redisClient, dbClient };
+export default dbClient;
